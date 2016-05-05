@@ -14,12 +14,10 @@ namespace GroupProject545
 
         static void Main(string[] args)
         {
-            Recipe recipe = new Recipe();
-            Ingredient ingredient = new Ingredient();
+            RecipePost recipe = new RecipePost();
             recipe.rec_name = "David's food";
             recipe.instructions = "David's instructions for said food item";
-            recipe.ingredients.Add(new Ingredient() { food_id = 2 }); //errors here
-            recipe.ingredients.Add(new Ingredient() { food_id = 1 }); //and here
+            recipe.ingredients_post.Add(new IngredientPost {food_id = 1}); //errors here
             recipe.category = "entree";
             recipe.CreateRecipe(recipe);
         }

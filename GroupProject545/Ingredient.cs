@@ -20,4 +20,10 @@ namespace GroupProject545
         [JsonProperty("in_fridge")]
         public bool in_fridge { get; set; }
     }
+
+    class IngredientPost
+    {
+        [JsonProperty("food_id")]
+        public int food_id { get; set; }
+    }
 }
