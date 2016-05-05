@@ -22,7 +22,19 @@ namespace GroupProject545
 
             var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
             var jsonString = (new StreamReader(httpResponse.GetResponseStream())).ReadToEnd();
-            List<Recipe> recipe_json = JsonConvert.DeserializeObject<List<Recipe>>(jsonString); //error here
+            Recipe recipe_json = JsonConvert.DeserializeObject<Recipe>(jsonString);
+            Console.WriteLine("Recipe name: " + recipe_json.rec_name);
+            Console.WriteLine("Recipe id: " + recipe_json.rec_id);
+            Console.WriteLine("Recipe instructions: " + recipe_json.instructions);
+            Console.WriteLine("Recipe category: " + recipe_json.category);
+            foreach(var ingredient in recipe_json.ingredients)
+            {
+                Console.WriteLine("Ingredient FK Nutrition fact id: " + ingredient.fk_nfact_id);
+                Console.WriteLine("Food id: " + ingredient.food_id);
+                Console.WriteLine("Food name: " + ingredient.food_name);
+                Console.WriteLine("In fridge: " + ingredient.in_fridge);
+            }
+            Console.ReadLine();
         }
     }
 
@@ -31,7 +43,7 @@ namespace GroupProject545
         [JsonProperty("category")]
         public string category { get; set; }
         [JsonProperty("ingredients")]
-        public List<string> ingredients { get; set; }
+        public List<Ingredient> ingredients { get; set; }
         [JsonProperty("instructions")]
         public string instructions { get; set; }
         [JsonProperty("rec_id")]
@@ -39,4 +51,17 @@ namespace GroupProject545
         [JsonProperty("rec_name")]
         public string rec_name { get; set; }
     }
+
+    class Ingredient
+    {
+        [JsonProperty("fk_nfact_id")]
+        public int fk_nfact_id { get; set; }
+        [JsonProperty("food_id")]
+        public int food_id { get; set; }
+        [JsonProperty("food_name")]
+        public string food_name { get; set; }
+        [JsonProperty("in_fridge")]
+        public bool in_fridge { get; set; }
+    }
+
 }
