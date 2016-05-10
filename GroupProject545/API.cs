@@ -247,5 +247,56 @@ namespace GroupProject545
             }
 
         }
+
+        public List<Food> CreateOrUpdateFood(List<Food> food)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.foodEndpoint);
+                request.Method = "POST";
+                request.ContentType = "application/json";
+                var json_to_send = JsonConvert.SerializeObject(new
+                {
+                    food = food.Select(f => new Food
+                    {
+                        fk_nfact_id = f.fk_nfact_id,
+                        food_id = f.food_id,
+                        food_name = f.food_name,
+                        in_fridge = f.in_fridge,
+                        nutrition = f.nutrition
+                    })
+                });
+
+                using (var streamWriter = new StreamWriter(request.GetRequestStream()))
+                {
+                    streamWriter.Write(json_to_send);
+                }
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
+                var json_response = JObject.Parse(json_string);
+                var error = json_response.Property("error");
+                if (error != null)
+                {
+                    throw new APIException(@"Server returned with error: " + error);
+                }
+
+                var ret_val = ((JArray)json_response.GetValue("food")).ToObject<List<Food>>();
+                this.Fridge = this.Fridge.Union(ret_val).ToList();
+                return ret_val;
+            }
+            catch (Exception e)
+            {
+                if (e is APIException)
+                {
+                    throw e;
+                }
+                if (e is WebException)
+                {
+                    throw new APIException("@Server responded with: " + e.Message);
+                }
+                throw e;
+            }
+        }
     }
 }
