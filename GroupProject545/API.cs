@@ -74,7 +74,7 @@ namespace GroupProject545
             }
             catch (Exception e)
             {
-                throw new Exception(@"Failed to get all recipes!");
+                throw new APIException(@"Failed to get all recipes!");
             }
             return this.Recipes;
         }
@@ -104,10 +104,6 @@ namespace GroupProject545
             }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
                 if (e is WebException)
                 {
                     throw new APIException("@Server responded with: " + e.Message);
@@ -197,10 +193,6 @@ namespace GroupProject545
             }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
                 if (e is WebException)
                 {
                     throw new APIException("@Server responded with: " + e.Message);
@@ -235,10 +227,6 @@ namespace GroupProject545
             }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
                 if (e is WebException)
                 {
                     throw new APIException("@Server responded with: " + e.Message);
@@ -287,10 +275,6 @@ namespace GroupProject545
             }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
                 if (e is WebException)
                 {
                     throw new APIException("@Server responded with: " + e.Message);
@@ -319,11 +303,7 @@ namespace GroupProject545
 
             }
             catch (Exception e)
-            {
-                if (e is APIException)
-                {
-                    throw e;
-                }
+            {                
                 if (e is WebException)
                 {
                     throw new APIException("@Server responded with: " + e.Message);
@@ -353,10 +333,6 @@ namespace GroupProject545
             }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
                 if (e is WebException)
                 {
                     throw new APIException("@Server responded with: " + e.Message);
@@ -385,10 +361,6 @@ namespace GroupProject545
             }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
                 if (e is WebException)
                 {
                     throw new APIException("@Server responded with: " + e.Message);
@@ -398,10 +370,11 @@ namespace GroupProject545
         }
 
         /// <summary>
-        /// 
+        /// Queries the server and updates the internal cache member with Food objects
+        /// representing all Food objects currently on the server
         /// </summary>
         /// 
-        /// <returns> List</returns>
+        /// <returns>A List of Food objects taht was returned from the server</returns>
 
         public List<Food> GetFoods()
         {
@@ -417,11 +390,19 @@ namespace GroupProject545
             }
             catch (Exception e)
             {
-                throw new Exception(@"Failed to get all recipes!");
+                throw new APIException(@"Failed to get all foods!");
             }
             return this.Ingredients;
         }
 
+        /// <summary>
+        /// Sends a list of nutrition objects to be created or updated to the server. Will
+        /// update the internal cache to hold new and updated nutrition objects
+        /// </summary>
+        /// <param name="nutrition">A list of Nutrition objects to be updated or created. If an nfact_id is 
+        /// present on a Nutrition object, it will be updated on the server. Otherwise it will take the
+        /// values and create a new Nutrition record.</param>
+        /// <returns>A list of Nutrition objects that were updated or created by the server</returns>
         public List<Nutrition> CreateOrUpdateNutrition(List<Nutrition> nutrition)
         {
             try
@@ -464,10 +445,6 @@ namespace GroupProject545
             }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
                 if (e is WebException)
                 {
                     throw new APIException("@Server responded with: " + e.Message);
@@ -475,7 +452,11 @@ namespace GroupProject545
                 throw e;
             }
         }
-
+        /// <summary>
+        /// Delete a nutrition record from the server and update the internal cache
+        /// </summary>
+        /// <param name="id">The nfact_id of the Nutrition object to delete</param>
+        /// <returns></returns>
         public bool DeleteNutrition(int id)
         {
             try
@@ -491,16 +472,14 @@ namespace GroupProject545
                 {
                     throw new APIException(@"Server returned with error: " + error);
                 }
-
+                // Update the internal cache by selecting all cache members that don't have the 
+                // id. This saves an API call
+                this.NutritionalFacts = this.NutritionalFacts.Where(n => n.nfact_id != id).ToList();
                 return JsonConvert.DeserializeObject<DeleteResponse>(json_string).success;
 
             }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
                 if (e is WebException)
                 {
                     throw new APIException("@Server responded with: " + e.Message);
@@ -509,47 +488,20 @@ namespace GroupProject545
             }
 
         }
-
-        public Nutrition GetNutrition(string name)
-        {
-            try
-            {
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.nutritionEndpoint + name + "/");
-                request.Method = "GET";
-
-                var response = (HttpWebResponse)request.GetResponse();
-                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
-                var json_response = JObject.Parse(json_string);
-                var error = json_response.Property("error");
-                if (error != null)
-                {
-                    throw new APIException(@"Server returned with error: " + error);
-                }
-
-                return JsonConvert.DeserializeObject<Nutrition>(json_string);
-            }
-            catch (Exception e)
-            {
-                if (e is APIException)
-                {
-                    throw e;
-                }
-                if (e is WebException)
-                {
-                    throw new APIException("@Server responded with: " + e.Message);
-                }
-                throw e;
-            }
-        }
-
+        
+        /// <summary>
+        /// Query the API for a Nutritional Fact based on its numeric ID
+        /// </summary>
+        /// <param name="id">The nfact_id of the Nutritional Fact to query for</param>
+        /// <returns>A Nutrition object if the server found one, null if not</returns>
         public Nutrition GetNutrition(int id)
         {
             try
             {
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.nutritionEndpoint + id + "/");
+                HttpWebRequest request = (HttpWebRequest) WebRequest.Create(this.nutritionEndpoint + id + "/");
                 request.Method = "GET";
 
-                var response = (HttpWebResponse)request.GetResponse();
+                var response = (HttpWebResponse) request.GetResponse();
                 var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
                 var json_response = JObject.Parse(json_string);
                 var error = json_response.Property("error");
@@ -560,20 +512,28 @@ namespace GroupProject545
 
                 return JsonConvert.DeserializeObject<Nutrition>(json_string);
             }
+            catch (WebException e)
+            {
+                if (e.Status == WebExceptionStatus.ProtocolError)
+                {
+                    if (((HttpWebResponse) e.Response).StatusCode == HttpStatusCode.NotFound)
+                    {
+                        return null;
+                    }
+                }
+                throw new APIException("@Server responded with: " + e.Message);
+
+            }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
-                if (e is WebException)
-                {
-                    throw new APIException("@Server responded with: " + e.Message);
-                }
                 throw e;
             }
         }
 
+        /// <summary>
+        /// Queries the API to update the cache with all nutritional facts on the server
+        /// </summary>
+        /// <returns>The result of querying the server for all nutritional facts</returns>
         public List<Nutrition> GetNutritions()
         {
             try
@@ -588,7 +548,7 @@ namespace GroupProject545
             }
             catch (Exception e)
             {
-                throw new Exception(@"Failed to get all recipes!");
+                throw new Exception(@"Failed to get all nutritional facts!");
             }
             return this.NutritionalFacts;
         }
