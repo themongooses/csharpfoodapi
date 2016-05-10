@@ -23,7 +23,7 @@ namespace GroupProject545
 
         // BEGIN CACHE MEMBERS //
         public List<Recipe> Recipes = new List<Recipe>();
-        public List<Ingredient> Ingredients = new List<Ingredient>();
+        public List<Food> Ingredients = new List<Food>();
         public List<Nutrition> NutritionalFacts = new List<Nutrition>();
         public List<Menu> Menus = new List<Menu>();
         public List<Food> Fridge = new List<Food>();
@@ -282,7 +282,7 @@ namespace GroupProject545
                 }
 
                 var ret_val = ((JArray)json_response.GetValue("food")).ToObject<List<Food>>();
-                this.Fridge = this.Fridge.Union(ret_val).ToList();
+                this.Ingredients = this.Ingredients.Union(ret_val).ToList();
                 return ret_val;
             }
             catch (Exception e)
