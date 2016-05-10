@@ -11,19 +11,14 @@ namespace GroupProject545
 {
     class Ingredient
     {
-        [JsonProperty("fk_nfact_id")]
         public int fk_nfact_id { get; set; }
-        [JsonProperty("food_id")]
         public int food_id { get; set; }
-        [JsonProperty("food_name")]
         public string food_name { get; set; }
-        [JsonProperty("in_fridge")]
         public bool in_fridge { get; set; }
     }
 
     class IngredientPost
     {
-        [JsonProperty("food_id")]
         public int food_id { get; set; }
     }
 }
