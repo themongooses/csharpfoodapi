@@ -38,8 +38,38 @@ namespace GroupProject545
 
 			var response  = api.CreateOrUpdateFood(list_of_food);
 			foreach(var food in response){
-				Console.WriteLine(food);
+				Console.WriteLine(food.food_name);
+                if (food.nutrition != null)
+                {
+                    Console.WriteLine(food.nutrition.nfact_id);
+                }
 			}
+
+            List<Nutrition> list_of_nutrition = new List<Nutrition> {
+                new Nutrition {
+                    nfact_id = 1,
+                    food_group = "grain",
+                    fat = 30,
+                    amount = 8,
+                    calories = 500,
+                    protein = 16,
+                    sugar = 20,
+                    sodium = 31
+                },
+
+                new Nutrition {
+                    food_group = "veggies",
+                    fat = 10,
+                    amount = 4,
+                    calories = 200,
+                    protein = 2,
+                    sugar = 1,
+                    sodium = 3
+                }
+            };
+
+            var nfact_response = api.CreateOrUpdateNutrition(list_of_nutrition);
+            nfact_response.ForEach(Console.WriteLine);
 			Console.ReadLine();
         }
     }

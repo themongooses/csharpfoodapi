@@ -191,7 +191,7 @@ namespace GroupProject545
                     throw new APIException(@"Server returned with error: " + error);
                 }
 
-                var ret_val = ((JArray) json_response.GetValue("recipes")).ToObject<List<Recipe>>();
+                var ret_val = ((JArray)json_response.GetValue("recipes")).ToObject<List<Recipe>>();
                 this.Recipes = this.Recipes.Union(ret_val).ToList();
                 return ret_val;
             }
@@ -297,6 +297,300 @@ namespace GroupProject545
                 }
                 throw e;
             }
+        }
+
+        public bool DeleteFood(int id)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.foodEndpoint + id + "/del/");
+                request.Method = "DELETE";
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
+                var json_response = JObject.Parse(json_string);
+                var error = json_response.Property("error");
+                if (error != null)
+                {
+                    throw new APIException(@"Server returned with error: " + error);
+                }
+
+                return JsonConvert.DeserializeObject<DeleteResponse>(json_string).success;
+
+            }
+            catch (Exception e)
+            {
+                if (e is APIException)
+                {
+                    throw e;
+                }
+                if (e is WebException)
+                {
+                    throw new APIException("@Server responded with: " + e.Message);
+                }
+                throw e;
+            }
+
+        }
+
+        public Food GetFood(string name)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.foodEndpoint + name + "/");
+                request.Method = "GET";
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
+                var json_response = JObject.Parse(json_string);
+                var error = json_response.Property("error");
+                if (error != null)
+                {
+                    throw new APIException(@"Server returned with error: " + error);
+                }
+
+                return JsonConvert.DeserializeObject<Food>(json_string);
+            }
+            catch (Exception e)
+            {
+                if (e is APIException)
+                {
+                    throw e;
+                }
+                if (e is WebException)
+                {
+                    throw new APIException("@Server responded with: " + e.Message);
+                }
+                throw e;
+            }
+        }
+
+        public Food GetFood(int id)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.foodEndpoint + id + "/");
+                request.Method = "GET";
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
+                var json_response = JObject.Parse(json_string);
+                var error = json_response.Property("error");
+                if (error != null)
+                {
+                    throw new APIException(@"Server returned with error: " + error);
+                }
+
+                return JsonConvert.DeserializeObject<Food>(json_string);
+            }
+            catch (Exception e)
+            {
+                if (e is APIException)
+                {
+                    throw e;
+                }
+                if (e is WebException)
+                {
+                    throw new APIException("@Server responded with: " + e.Message);
+                }
+                throw e;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// 
+        /// <returns> List</returns>
+
+        public List<Food> GetFoods()
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.foodEndpoint + "all/");
+                request.Method = "GET";
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json = JObject.Parse((new StreamReader(response.GetResponseStream())).ReadToEnd());
+
+                this.Ingredients = ((JArray)json.GetValue("food")).ToObject<List<Food>>();
+            }
+            catch (Exception e)
+            {
+                throw new Exception(@"Failed to get all recipes!");
+            }
+            return this.Ingredients;
+        }
+
+        public List<Nutrition> CreateOrUpdateNutrition(List<Nutrition> nutrition)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.nutritionEndpoint);
+                request.Method = "POST";
+                request.ContentType = "application/json";
+                var json_to_send = JsonConvert.SerializeObject(new
+                {
+                    nutrition = nutrition.Select(n => new Nutrition
+                    {
+                        nfact_id = n.nfact_id,
+                        calories = n.calories,
+                        sodium = n.sodium,
+                        fat = n.fat,
+                        food_group = n.food_group,
+                        amount = n.amount,
+                        protein = n.protein,
+                        sugar = n.sugar
+                    })
+                });
+
+                using (var streamWriter = new StreamWriter(request.GetRequestStream()))
+                {
+                    streamWriter.Write(json_to_send);
+                }
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
+                var json_response = JObject.Parse(json_string);
+                var error = json_response.Property("error");
+                if (error != null)
+                {
+                    throw new APIException(@"Server returned with error: " + error);
+                }
+
+                var ret_val = ((JArray)json_response.GetValue("nutritional_facts")).ToObject<List<Nutrition>>();
+                this.NutritionalFacts = this.NutritionalFacts.Union(ret_val).ToList();
+                return ret_val;
+            }
+            catch (Exception e)
+            {
+                if (e is APIException)
+                {
+                    throw e;
+                }
+                if (e is WebException)
+                {
+                    throw new APIException("@Server responded with: " + e.Message);
+                }
+                throw e;
+            }
+        }
+
+        public bool DeleteNutrition(int id)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.nutritionEndpoint + id + "/del/");
+                request.Method = "DELETE";
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
+                var json_response = JObject.Parse(json_string);
+                var error = json_response.Property("error");
+                if (error != null)
+                {
+                    throw new APIException(@"Server returned with error: " + error);
+                }
+
+                return JsonConvert.DeserializeObject<DeleteResponse>(json_string).success;
+
+            }
+            catch (Exception e)
+            {
+                if (e is APIException)
+                {
+                    throw e;
+                }
+                if (e is WebException)
+                {
+                    throw new APIException("@Server responded with: " + e.Message);
+                }
+                throw e;
+            }
+
+        }
+
+        public Nutrition GetNutrition(string name)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.nutritionEndpoint + name + "/");
+                request.Method = "GET";
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
+                var json_response = JObject.Parse(json_string);
+                var error = json_response.Property("error");
+                if (error != null)
+                {
+                    throw new APIException(@"Server returned with error: " + error);
+                }
+
+                return JsonConvert.DeserializeObject<Nutrition>(json_string);
+            }
+            catch (Exception e)
+            {
+                if (e is APIException)
+                {
+                    throw e;
+                }
+                if (e is WebException)
+                {
+                    throw new APIException("@Server responded with: " + e.Message);
+                }
+                throw e;
+            }
+        }
+
+        public Nutrition GetNutrition(int id)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.nutritionEndpoint + id + "/");
+                request.Method = "GET";
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
+                var json_response = JObject.Parse(json_string);
+                var error = json_response.Property("error");
+                if (error != null)
+                {
+                    throw new APIException(@"Server returned with error: " + error);
+                }
+
+                return JsonConvert.DeserializeObject<Nutrition>(json_string);
+            }
+            catch (Exception e)
+            {
+                if (e is APIException)
+                {
+                    throw e;
+                }
+                if (e is WebException)
+                {
+                    throw new APIException("@Server responded with: " + e.Message);
+                }
+                throw e;
+            }
+        }
+
+        public List<Nutrition> GetNutritions()
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.nutritionEndpoint + "all/");
+                request.Method = "GET";
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json = JObject.Parse((new StreamReader(response.GetResponseStream())).ReadToEnd());
+
+                this.NutritionalFacts = ((JArray)json.GetValue("nutritional_facts")).ToObject<List<Nutrition>>();
+            }
+            catch (Exception e)
+            {
+                throw new Exception(@"Failed to get all recipes!");
+            }
+            return this.NutritionalFacts;
         }
     }
 }
