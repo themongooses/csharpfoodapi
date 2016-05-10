@@ -248,6 +248,8 @@ namespace GroupProject545
 
         }
 
+        // FOOD ROUTES //
+
         public List<Food> CreateOrUpdateFood(List<Food> food)
         {
             try
@@ -397,11 +399,6 @@ namespace GroupProject545
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// 
-        /// <returns> List</returns>
 
         public List<Food> GetFoods()
         {
@@ -422,7 +419,9 @@ namespace GroupProject545
             return this.Ingredients;
         }
 
-        public List<Nutrition> CreateOrUpdateNutrition(List<Nutrition> nutrition)
+        // NUTRITION ROUTES //
+
+        public List<Nutrition> CreateOrUpdateNutrition(List<Nutrition> facts)
         {
             try
             {
@@ -431,7 +430,7 @@ namespace GroupProject545
                 request.ContentType = "application/json";
                 var json_to_send = JsonConvert.SerializeObject(new
                 {
-                    nutrition = nutrition.Select(n => new Nutrition
+                    facts = facts.Select(n => new Nutrition
                     {
                         nfact_id = n.nfact_id,
                         calories = n.calories,
@@ -591,6 +590,275 @@ namespace GroupProject545
                 throw new Exception(@"Failed to get all recipes!");
             }
             return this.NutritionalFacts;
+        }
+
+        // MENU ROUTES //
+
+        public List<Menu> CreateOrUpdateMenu(List<Menu> menus)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.menuEndpoint);
+                request.Method = "POST";
+                request.ContentType = "application/json";
+                var json_to_send = JsonConvert.SerializeObject(new
+                {
+                    menus = menus.Select(m => new Menu
+                    {
+                        id = m.id,
+                        date = m.date,
+                        time_of_day = m.time_of_day,
+                        recipes = 
+                    })
+                });
+
+                using (var streamWriter = new StreamWriter(request.GetRequestStream()))
+                {
+                    streamWriter.Write(json_to_send);
+                }
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
+                var json_response = JObject.Parse(json_string);
+                var error = json_response.Property("error");
+                if (error != null)
+                {
+                    throw new APIException(@"Server returned with error: " + error);
+                }
+
+                var ret_val = ((JArray)json_response.GetValue("menus")).ToObject<List<Menu>>();
+                this.Menus = this.Menus.Union(ret_val).ToList();
+                return ret_val;
+            }
+            catch (Exception e)
+            {
+                if (e is APIException)
+                {
+                    throw e;
+                }
+                if (e is WebException)
+                {
+                    throw new APIException("@Server responded with: " + e.Message);
+                }
+                throw e;
+            }
+        }
+
+        public List<Menu> GetMenus()
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.menuEndpoint + "all/");
+                request.Method = "GET";
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json = JObject.Parse((new StreamReader(response.GetResponseStream())).ReadToEnd());
+
+                this.Menus = ((JArray)json.GetValue("menus")).ToObject<List<Menu>>();
+            }
+            catch (Exception e)
+            {
+                throw new Exception(@"Failed to get all recipes!");
+            }
+            return this.Menus;
+        }
+
+        public bool DeleteMenu(int id)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.menuEndpoint + id + "/del/");
+                request.Method = "DELETE";
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
+                var json_response = JObject.Parse(json_string);
+                var error = json_response.Property("error");
+                if (error != null)
+                {
+                    throw new APIException(@"Server returned with error: " + error);
+                }
+
+                return JsonConvert.DeserializeObject<DeleteResponse>(json_string).success;
+
+            }
+            catch (Exception e)
+            {
+                if (e is APIException)
+                {
+                    throw e;
+                }
+                if (e is WebException)
+                {
+                    throw new APIException("@Server responded with: " + e.Message);
+                }
+                throw e;
+            }
+
+        }
+
+        public Menu GetMenu(string time_of_day)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.menuEndpoint + time_of_day + "/");
+                request.Method = "GET";
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
+                var json_response = JObject.Parse(json_string);
+                var error = json_response.Property("error");
+                if (error != null)
+                {
+                    throw new APIException(@"Server returned with error: " + error);
+                }
+
+                return JsonConvert.DeserializeObject<Menu>(json_string);
+            }
+            catch (Exception e)
+            {
+                if (e is APIException)
+                {
+                    throw e;
+                }
+                if (e is WebException)
+                {
+                    throw new APIException("@Server responded with: " + e.Message);
+                }
+                throw e;
+            }
+        }
+
+        public Menu GetMenu(string time_of_day, DateTime date)
+        {
+            try
+            {
+                String new_date = date.ToString("yyyy-MM-dd");
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.menuEndpoint + time_of_day + "/" + new_date + "/");
+                request.Method = "GET";
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
+                var json_response = JObject.Parse(json_string);
+                var error = json_response.Property("error");
+                if (error != null)
+                {
+                    throw new APIException(@"Server returned with error: " + error);
+                }
+
+                return JsonConvert.DeserializeObject<Menu>(json_string);
+            }
+            catch (Exception e)
+            {
+                if (e is APIException)
+                {
+                    throw e;
+                }
+                if (e is WebException)
+                {
+                    throw new APIException("@Server responded with: " + e.Message);
+                }
+                throw e;
+            }
+        }
+
+        public Menu GetMenu(DateTime date)
+        {
+            try
+            {
+                String new_date = date.ToString("yyyy-MM-dd");
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.menuEndpoint + "date/" + new_date + "/");
+                request.Method = "GET";
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
+                var json_response = JObject.Parse(json_string);
+                var error = json_response.Property("error");
+                if (error != null)
+                {
+                    throw new APIException(@"Server returned with error: " + error);
+                }
+
+                return JsonConvert.DeserializeObject<Menu>(json_string);
+            }
+            catch (Exception e)
+            {
+                if (e is APIException)
+                {
+                    throw e;
+                }
+                if (e is WebException)
+                {
+                    throw new APIException("@Server responded with: " + e.Message);
+                }
+                throw e;
+            }
+        }
+
+        public Menu GetMenu(DateTime date1, DateTime date2)
+        {
+            try
+            {
+                String new_date1 = date1.ToString("yyyy-MM-dd");
+                String new_date2 = date2.ToString("yyyy-MM-dd");
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.menuEndpoint + "date/between/" + new_date1 + "/" + new_date2 + "/");
+                request.Method = "GET";
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
+                var json_response = JObject.Parse(json_string);
+                var error = json_response.Property("error");
+                if (error != null)
+                {
+                    throw new APIException(@"Server returned with error: " + error);
+                }
+
+                return JsonConvert.DeserializeObject<Menu>(json_string);
+            }
+            catch (Exception e)
+            {
+                if (e is APIException)
+                {
+                    throw e;
+                }
+                if (e is WebException)
+                {
+                    throw new APIException("@Server responded with: " + e.Message);
+                }
+                throw e;
+            }
+        }
+
+        public Menu GetMenu(int id)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.menuEndpoint + id + "/");
+                request.Method = "GET";
+
+                var response = (HttpWebResponse)request.GetResponse();
+                var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
+                var json_response = JObject.Parse(json_string);
+                var error = json_response.Property("error");
+                if (error != null)
+                {
+                    throw new APIException(@"Server returned with error: " + error);
+                }
+
+                return JsonConvert.DeserializeObject<Menu>(json_string);
+            }
+            catch (Exception e)
+            {
+                if (e is APIException)
+                {
+                    throw e;
+                }
+                if (e is WebException)
+                {
+                    throw new APIException("@Server responded with: " + e.Message);
+                }
+                throw e;
+            }
         }
     }
 }
