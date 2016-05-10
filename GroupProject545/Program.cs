@@ -70,6 +70,22 @@ namespace GroupProject545
 
             var nfact_response = api.CreateOrUpdateNutrition(list_of_nutrition);
             nfact_response.ForEach(Console.WriteLine);
+
+            var menus_response = api.GetMenus();
+            menus_response.ForEach(Console.WriteLine);
+
+            List<Menu> list_of_menus = new List<Menu> {
+                new Menu {
+                    recipes = int [1, 2, 3],
+                    time_of_day = "breakfast",
+                    date = new DateTime(2016, 05, 10)
+                }
+            };
+
+            var new_menu_response = api.CreateOrUpdateMenu(list_of_menus);
+            foreach(var menu in new_menu_response) {
+                Console.WriteLine(menu.id);
+            }
 			Console.ReadLine();
         }
     }
