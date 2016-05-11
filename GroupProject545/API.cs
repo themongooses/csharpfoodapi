@@ -4,12 +4,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using GroupProject545;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace GroupProject545
+namespace FoodAPI
 {
     class API
     {
@@ -102,12 +104,20 @@ namespace GroupProject545
 
                 return JsonConvert.DeserializeObject<Recipe>(json_string);
             }
+            catch (WebException e)
+            {
+                if (e.Status == WebExceptionStatus.ProtocolError)
+                {
+                    if (((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotFound)
+                    {
+                        return null;
+                    }
+                }
+                throw new APIException("@Server responded with: " + e.Message);
+
+            }
             catch (Exception e)
             {
-                if (e is WebException)
-                {
-                    throw new APIException("@Server responded with: " + e.Message);
-                }
                 throw e;
             }
         }
@@ -134,16 +144,20 @@ namespace GroupProject545
 
                 return JsonConvert.DeserializeObject<Recipe>(json_string);
             }
+            catch (WebException e)
+            {
+                if (e.Status == WebExceptionStatus.ProtocolError)
+                {
+                    if (((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotFound)
+                    {
+                        return null;
+                    }
+                }
+                throw new APIException("@Server responded with: " + e.Message);
+
+            }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
-                if (e is WebException)
-                {
-                    throw new APIException("@Server responded with: " + e.Message);
-                }
                 throw e;
             }
         }
@@ -221,7 +235,7 @@ namespace GroupProject545
                 {
                     throw new APIException(@"Server returned with error: " + error);
                 }
-
+                this.Recipes = this.Recipes.Where(r => r.rec_id != id).ToList();
                 return JsonConvert.DeserializeObject<DeleteResponse>(json_string).success;
 
             }
@@ -236,8 +250,23 @@ namespace GroupProject545
 
         }
 
-        // FOOD ROUTES //
+        public bool DeleteRecipe(Recipe recipeitem)
+        {
+            if (recipeitem.rec_id == null)
+            {
+                throw new APIException(@"Cannot delete a Recipe object that does not have a rec_id attribute");
+            }
+            return this.DeleteRecipe(recipeitem.rec_id);
+        }
 
+        /// <summary>
+        /// Given a list of Food objects, send an API request to update or create the given
+        /// Food objects and update the internal cache representation
+        /// </summary>
+        /// <param name="food">A list of Food items to create or update. If an item doesn't have a food_id, then it 
+        /// will be treated as a new item and be created. If it does, then it will be treated as an item that already
+        /// exists and will have its values overwritten on the server</param>
+        /// <returns></returns>
         public List<Food> CreateOrUpdateFood(List<Food> food)
         {
             try
@@ -277,14 +306,15 @@ namespace GroupProject545
             }
             catch (Exception e)
             {
-                if (e is WebException)
-                {
-                    throw new APIException("@Server responded with: " + e.Message);
-                }
                 throw e;
             }
         }
 
+        /// <summary>
+        /// Make an API call to delete a food item from the server. Updates the internal cache as well
+        /// </summary>
+        /// <param name="id">The food_id of the food item to delete</param>
+        /// <returns>A boolean representing if a food item was deleted or not</returns>
         public bool DeleteFood(int id)
         {
             try
@@ -300,21 +330,35 @@ namespace GroupProject545
                 {
                     throw new APIException(@"Server returned with error: " + error);
                 }
-
+                this.Ingredients = this.Ingredients.Where(i => i.food_id != id).ToList();
                 return JsonConvert.DeserializeObject<DeleteResponse>(json_string).success;
 
             }
             catch (Exception e)
             {
-                if (e is WebException)
-                {
-                    throw new APIException("@Server responded with: " + e.Message);
-                }
                 throw e;
             }
 
         }
+        /// <summary>
+        /// Convenience wrapper for DeleteFood(int id). Will complain if fooditem doesn't have a non-null id
+        /// </summary>
+        /// <param name="fooditem">The food item to delete. Must have a non-null food_id</param>
+        /// <returns>A boolean representing if a food item was deleted or not</returns>
+        public bool DeleteFood(Food fooditem)
+        {
+            if (fooditem.food_id == null)
+            {
+                throw new APIException(@"Food item cannot have a null id while deleting");
+            }
+            return this.DeleteFood(fooditem.food_id);
+        }
 
+        /// <summary>
+        /// Query the API to get a food record by its name
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public Food GetFood(string name)
         {
             try
@@ -333,16 +377,28 @@ namespace GroupProject545
 
                 return JsonConvert.DeserializeObject<Food>(json_string);
             }
+            catch (WebException e)
+            {
+                if (e.Status == WebExceptionStatus.ProtocolError)
+                {
+                    if (((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotFound)
+                    {
+                        return null;
+                    }
+                }
+                throw new APIException("@Server responded with: " + e.Message);
+
+            }
             catch (Exception e)
             {
-                if (e is WebException)
-                {
-                    throw new APIException("@Server responded with: " + e.Message);
-                }
                 throw e;
             }
         }
-
+        /// <summary>
+        /// Get a food item from the API based on its id
+        /// </summary>
+        /// <param name="id">The numeric id of the food item to get</param>
+        /// <returns>The Food item if it exist or null if it does not</returns>
         public Food GetFood(int id)
         {
             try
@@ -361,6 +417,18 @@ namespace GroupProject545
 
                 return JsonConvert.DeserializeObject<Food>(json_string);
             }
+            catch (WebException e)
+            {
+                if (e.Status == WebExceptionStatus.ProtocolError)
+                {
+                    if (((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotFound)
+                    {
+                        return null;
+                    }
+                }
+                throw new APIException("@Server responded with: " + e.Message);
+
+            }
             catch (Exception e)
             {
                 if (e is WebException)
@@ -377,7 +445,6 @@ namespace GroupProject545
         /// </summary>
         /// 
         /// <returns>A List of Food objects taht was returned from the server</returns>
-
         public List<Food> GetFoods()
         {
             try
@@ -414,7 +481,7 @@ namespace GroupProject545
                 request.ContentType = "application/json";
                 var json_to_send = JsonConvert.SerializeObject(new
                 {
-                    facts = facts.Select(n => new Nutrition
+                    facts = nutritional_facts.Select(n => new Nutrition
                     {
                         nfact_id = n.nfact_id,
                         calories = n.calories,
@@ -490,20 +557,33 @@ namespace GroupProject545
             }
 
         }
+        /// <summary>
+        /// Convenience method for deleting a nutrition item
+        /// </summary>
+        /// <param name="nutritionitem">The nutrition item to delete. Will complain if it doesn't have an nfact_id set</param>
+        /// <returns>Whether the server successfully deleted the nutritional fact or now</returns>
+        public bool DeleteNutrition(Nutrition nutritionitem)
+        {
+            if (nutritionitem.nfact_id == null)
+            {
+                throw new APIException(@"Cannot delete a Nutrition object without a non-null nfact_id");
+            }
+            return this.DeleteNutrition(nutritionitem.nfact_id);
+        }
 
         /// <summary>
         /// Query the API for a Nutritional Fact based on its numeric ID
         /// </summary>
         /// <param name="id">The nfact_id of the Nutritional Fact to query for</param>
         /// <returns>A Nutrition object if the server found one, null if not</returns>
-        public Nutrition GetNutrition(int id)
+        public Nutrition GetNutritionalFact(int id)
         {
             try
             {
-                HttpWebRequest request = (HttpWebRequest) WebRequest.Create(this.nutritionEndpoint + id + "/");
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.nutritionEndpoint + id + "/");
                 request.Method = "GET";
 
-                var response = (HttpWebResponse) request.GetResponse();
+                var response = (HttpWebResponse)request.GetResponse();
                 var json_string = (new StreamReader(response.GetResponseStream())).ReadToEnd();
                 var json_response = JObject.Parse(json_string);
                 var error = json_response.Property("error");
@@ -518,11 +598,11 @@ namespace GroupProject545
             {
                 if (e.Status == WebExceptionStatus.ProtocolError)
                 {
-                    if (((HttpWebResponse) e.Response).StatusCode == HttpStatusCode.NotFound)
-                {
+                    if (((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotFound)
+                    {
                         return null;
-            }
-        }
+                    }
+                }
                 throw new APIException("@Server responded with: " + e.Message);
 
             }
@@ -536,7 +616,7 @@ namespace GroupProject545
         /// Queries the API to update the cache with all nutritional facts on the server
         /// </summary>
         /// <returns>The result of querying the server for all nutritional facts</returns>
-        public List<Nutrition> GetNutritions()
+        public List<Nutrition> GetNutritionalFacts()
         {
             try
             {
@@ -555,8 +635,13 @@ namespace GroupProject545
             return this.NutritionalFacts;
         }
 
-        // MENU ROUTES //
 
+        /// <summary>
+        /// Given a list of menu objects, send an API request to update or create the given 
+        /// menu objects. Will update the internal cache with a Union operation
+        /// </summary>
+        /// <param name="menus">The list of menu objects to create or update</param>
+        /// <returns></returns>
         public List<Menu> CreateOrUpdateMenu(List<Menu> menus)
         {
             try
@@ -566,12 +651,12 @@ namespace GroupProject545
                 request.ContentType = "application/json";
                 var json_to_send = JsonConvert.SerializeObject(new
                 {
-                    menus = menus.Select(m => new Menu
+                    menus = menus.Select(m => new MenuPost
                     {
                         id = m.id,
-                        date = m.date,
+                        date = m.date.ToString("yyyy-MM-dd"),
                         time_of_day = m.time_of_day,
-                        recipes = 
+                        recipes = m.recipes.Select(r => r.rec_id).ToList()
                     })
                 });
 
@@ -595,18 +680,13 @@ namespace GroupProject545
             }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
-                if (e is WebException)
-                {
-                    throw new APIException("@Server responded with: " + e.Message);
-                }
                 throw e;
             }
         }
-
+        /// <summary>
+        /// Makes an API call and gets all Menus on the server. Updates the internal cache
+        /// </summary>
+        /// <returns>All menus on the server as a list of Menu objects</returns>
         public List<Menu> GetMenus()
         {
             try
@@ -625,7 +705,11 @@ namespace GroupProject545
             }
             return this.Menus;
         }
-
+        /// <summary>
+        /// Delete a menu from the server by its numeric id
+        /// </summary>
+        /// <param name="id">The id of the menu to delete</param>
+        /// <returns>Whether the deletion was succesful or not</returns>
         public bool DeleteMenu(int id)
         {
             try
@@ -641,16 +725,12 @@ namespace GroupProject545
                 {
                     throw new APIException(@"Server returned with error: " + error);
                 }
-
+                this.Menus = this.Menus.Where(m => m.id != id).ToList();
                 return JsonConvert.DeserializeObject<DeleteResponse>(json_string).success;
 
             }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
                 if (e is WebException)
                 {
                     throw new APIException("@Server responded with: " + e.Message);
@@ -659,8 +739,26 @@ namespace GroupProject545
             }
 
         }
-
-        public Menu GetMenu(string time_of_day)
+        /// <summary>
+        /// Convenience wrapper for the DeleteMenu(int id) function. Will complain if
+        /// given a Menu item that doesn't have an id
+        /// </summary>
+        /// <param name="menuitem">A menu with a numeric id attribute that is not null to delete</param>
+        /// <returns>Whether the deletion was successful or not</returns>
+        public bool DeleteMenu(Menu menuitem)
+        {
+            if (menuitem.id == null)
+            {
+                throw new APIException(@"Menu items cannot be deleted without an id");
+            }
+            return this.DeleteMenu(menuitem.id);
+        }
+        /// <summary>
+        /// Gets a list of menus for a time of day
+        /// </summary>
+        /// <param name="time_of_day">One of "breakfast", "lunch", or "dinner"</param>
+        /// <returns>Null if no menus found, a list of menu items otherwise</returns>
+        public List<Menu> GetMenus(string time_of_day)
         {
             try
             {
@@ -676,28 +774,37 @@ namespace GroupProject545
                     throw new APIException(@"Server returned with error: " + error);
                 }
 
-                return JsonConvert.DeserializeObject<Menu>(json_string);
+                return ((JArray)json_response.GetValue("menus")).ToObject<List<Menu>>();
+            }
+            catch (WebException e)
+            {
+                if (e.Status == WebExceptionStatus.ProtocolError)
+                {
+                    if (((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotFound)
+                    {
+                        return null;
+                    }
+                }
+                throw new APIException("@Server responded with: " + e.Message);
+
             }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
-                if (e is WebException)
-                {
-                    throw new APIException("@Server responded with: " + e.Message);
-                }
                 throw e;
             }
         }
 
-        public Menu GetMenu(string time_of_day, DateTime date)
+        /// <summary>
+        /// Get menus that match a time of day and a date
+        /// </summary>
+        /// <param name="time_of_day">One of either "lunch", "breakfast", or "dinner"</param>
+        /// <param name="date">The date to find menus for the time of day</param>
+        /// <returns>A list of menus that meet the criteria if they exist, otherwise null</returns>
+        public List<Menu> GetMenus(string time_of_day, DateTime date)
         {
             try
             {
-                String new_date = date.ToString("yyyy-MM-dd");
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.menuEndpoint + time_of_day + "/" + new_date + "/");
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.menuEndpoint + time_of_day + "/" + date.ToString("yyyy-MM-dd") + "/");
                 request.Method = "GET";
 
                 var response = (HttpWebResponse)request.GetResponse();
@@ -709,28 +816,35 @@ namespace GroupProject545
                     throw new APIException(@"Server returned with error: " + error);
                 }
 
-                return JsonConvert.DeserializeObject<Menu>(json_string);
+                return ((JArray)json_response.GetValue("menus")).ToObject<List<Menu>>();
+            }
+            catch (WebException e)
+            {
+                if (e.Status == WebExceptionStatus.ProtocolError)
+                {
+                    if (((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotFound)
+                    {
+                        return null;
+                    }
+                }
+                throw new APIException("@Server responded with: " + e.Message);
+
             }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
-                if (e is WebException)
-                {
-                    throw new APIException("@Server responded with: " + e.Message);
-                }
                 throw e;
             }
         }
-
-        public Menu GetMenu(DateTime date)
+        /// <summary>
+        /// Get menus for a given date
+        /// </summary>
+        /// <param name="date">The date to get menus for</param>
+        /// <returns>A list of menus if they exist or null</returns>
+        public List<Menu> GetMenus(DateTime date)
         {
             try
             {
-                String new_date = date.ToString("yyyy-MM-dd");
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.menuEndpoint + "date/" + new_date + "/");
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.menuEndpoint + "date/" + date.ToString("yyyy-MM-dd") + "/");
                 request.Method = "GET";
 
                 var response = (HttpWebResponse)request.GetResponse();
@@ -742,29 +856,37 @@ namespace GroupProject545
                     throw new APIException(@"Server returned with error: " + error);
                 }
 
-                return JsonConvert.DeserializeObject<Menu>(json_string);
+                return ((JArray)json_response.GetValue("menus")).ToObject<List<Menu>>();
+            }
+            catch (WebException e)
+            {
+                if (e.Status == WebExceptionStatus.ProtocolError)
+                {
+                    if (((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotFound)
+                    {
+                        return null;
+                    }
+                }
+                throw new APIException("@Server responded with: " + e.Message);
+
             }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
-                if (e is WebException)
-                {
-                    throw new APIException("@Server responded with: " + e.Message);
-                }
                 throw e;
             }
         }
-
-        public Menu GetMenu(DateTime date1, DateTime date2)
+        /// <summary>
+        /// Get a list of menus between two dates (inclusive). Returns null if no 
+        /// menus are found
+        /// </summary>
+        /// <param name="startDate">The start date to search for</param>
+        /// <param name="endDate">The end date to search for</param>
+        /// <returns>Null if no menus are found, otherwise a List of Menu items</returns>
+        public List<Menu> GetMenus(DateTime startDate, DateTime endDate)
         {
             try
             {
-                String new_date1 = date1.ToString("yyyy-MM-dd");
-                String new_date2 = date2.ToString("yyyy-MM-dd");
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.menuEndpoint + "date/between/" + new_date1 + "/" + new_date2 + "/");
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.menuEndpoint + "date/between/" + startDate.ToString("yyyy-MM-dd") + "/" + endDate.ToString("yyyy-MM-dd") + "/");
                 request.Method = "GET";
 
                 var response = (HttpWebResponse)request.GetResponse();
@@ -776,22 +898,31 @@ namespace GroupProject545
                     throw new APIException(@"Server returned with error: " + error);
                 }
 
-                return JsonConvert.DeserializeObject<Menu>(json_string);
+                return ((JArray)json_response.GetValue("menus")).ToObject<List<Menu>>();
+            }
+            catch (WebException e)
+            {
+                if (e.Status == WebExceptionStatus.ProtocolError)
+                {
+                    if (((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotFound)
+                    {
+                        return null;
+                    }
+                }
+                throw new APIException("@Server responded with: " + e.Message);
+
             }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
-                if (e is WebException)
-                {
-                    throw new APIException("@Server responded with: " + e.Message);
-                }
                 throw e;
             }
-        }
 
+        }
+        /// <summary>
+        /// Get a menu based on its ID
+        /// </summary>
+        /// <param name="id">The numeric id to find a menu by</param>
+        /// <returns>The menu item if it exists, null if otherwise</returns>
         public Menu GetMenu(int id)
         {
             try
@@ -810,18 +941,49 @@ namespace GroupProject545
 
                 return JsonConvert.DeserializeObject<Menu>(json_string);
             }
+            catch (WebException e)
+            {
+                if (e.Status == WebExceptionStatus.ProtocolError)
+                {
+                    if (((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotFound)
+                    {
+                        return null;
+                    }
+                }
+                throw new APIException("@Server responded with: " + e.Message);
+
+            }
             catch (Exception e)
             {
-                if (e is APIException)
-                {
-                    throw e;
-                }
-                if (e is WebException)
-                {
-                    throw new APIException("@Server responded with: " + e.Message);
-                }
                 throw e;
             }
         }
+    }
+
+    // HERE BE UTILITIES //
+
+    [Serializable]
+    internal class APIException : Exception
+    {
+        public APIException()
+        {
+        }
+
+        public APIException(string message) : base(message)
+        {
+        }
+
+        public APIException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        protected APIException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
+    }
+
+    class DeleteResponse
+    {
+        public bool success { get; set; }
     }
 }
