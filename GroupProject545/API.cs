@@ -359,7 +359,7 @@ namespace FoodAPI
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        public Food GetFood(string name)
+        public List<Food> GetFood(string name)
         {
             try
             {
@@ -374,8 +374,9 @@ namespace FoodAPI
                 {
                     throw new APIException(@"Server returned with error: " + error);
                 }
-
-                return JsonConvert.DeserializeObject<Food>(json_string);
+                var ret_val = ((JArray)json_response.GetValue("food")).ToObject<List<Food>>();
+                this.Ingredients = this.Ingredients.Union(ret_val).ToList();
+                return ret_val;
             }
             catch (WebException e)
             {
